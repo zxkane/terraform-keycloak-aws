@@ -210,6 +210,12 @@ variable "tags" {
   type        = map(string)
 }
 
+variable "target_group_name" {
+  description = "Name of ALB target group (max 32 chars, must not end with hyphen)"
+  type        = string
+  default     = ""
+}
+
 variable "vpc_id" {
   description = "AWS VPC ID"
   type        = string

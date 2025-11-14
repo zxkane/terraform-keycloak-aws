@@ -13,3 +13,13 @@ db/*.sql
 .envrc
 *.bak
 dist
+
+# Claude Code local files
+*.local.json
+CLAUDE.local.md
+*.local.md
+
+# Ignore environment-specific deployments
+environments/*
+!environments/mkenv
+!environments/template/

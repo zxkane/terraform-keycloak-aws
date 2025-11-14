@@ -23,5 +23,5 @@ if [ -z "${HOSTNAME}" ]; then
 fi
 
 # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/x-forwarded-headers.html
-exec /opt/keycloak/bin/kc.sh start --optimized --proxy-headers xforwarded "$@"
-exit $?
+# Remove --proxy-headers from command line since it's set via environment variable
+exec /opt/keycloak/bin/kc.sh start --optimized "$@"

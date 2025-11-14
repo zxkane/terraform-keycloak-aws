@@ -1,7 +1,7 @@
 ##################################################
 # Step 1 - Build an optimized image
 ##################################################
-FROM quay.io/keycloak/keycloak:24.0.1 as builder
+FROM quay.io/keycloak/keycloak:26.4.4 as builder
 
 # These options can be modified to produce a different
 # optimized build.
@@ -15,8 +15,8 @@ ENV KC_DB=postgres
 
 # https://github.com/keycloak/keycloak/discussions/10274
 # https://stackoverflow.com/questions/73049385/keycloak18-index-page-resource-not-found
-# This no longer works cleanly, neither does passing --http-relative-path=/auth
-#ENV KC_HTTP_RELATIVE_PATH=/auth
+# For Keycloak 26.4.4, we need to set this at build time
+ENV KC_HTTP_RELATIVE_PATH=/auth
 
 # # Clustering
 # (https://gist.github.com/xgp/768eea11f92806b9c83f95902f7f8f80)
@@ -45,7 +45,7 @@ RUN dnf update -y && \
 ###################################################################
 # Step 3 - Copy optimized build and dependencies into running image
 ###################################################################
-FROM quay.io/keycloak/keycloak:24.0.1
+FROM quay.io/keycloak/keycloak:26.4.4
 
 USER root
 COPY --from=ubi-micro-build /mnt/rootfs /

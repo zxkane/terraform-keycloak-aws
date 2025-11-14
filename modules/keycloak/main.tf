@@ -50,7 +50,7 @@ module "alb" {
   certificate_arn                         = var.alb_certificate_arn
   deletion_protection_enabled             = var.deletion_protection
   health_check_interval                   = 60
-  health_check_path                       = "/health"
+  health_check_path                       = "/auth/health"
   health_check_timeout                    = 10
   http_ingress_cidr_blocks                = var.http_ingress_cidr_blocks
   http_redirect                           = var.http_redirect
@@ -61,7 +61,7 @@ module "alb" {
   name                                    = module.label.id
   subnet_ids                              = var.internal ? var.private_subnet_ids : var.public_subnet_ids
   tags                                    = module.label.tags
-  target_group_name                       = substr(module.label.id, 0, 31)
+  target_group_name                       = var.target_group_name != "" ? var.target_group_name : substr(replace(module.label.id, "/-$/", ""), 0, 31)
   target_group_port                       = var.container_port
   target_group_target_type                = "ip"
   vpc_id                                  = var.vpc_id
