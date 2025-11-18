@@ -83,10 +83,11 @@ Critical environment variables in container_definition.json:
 - `HTTP_ACCEPT_NON_NORMALIZED_PATHS` - Set to `true` if clients send non-normalized paths
 
 ### Monitoring Considerations
-- Health check endpoint: `/health`
-- Metrics endpoint: `/metrics`
+- Health check endpoint: `/health` (requires KC_HEALTH_ENABLED=true)
+- Metrics endpoint: `/metrics` (requires KC_METRICS_ENABLED=true)
 - Management port: 9990
 - Clustering port: 7800 (JDBC_PING)
+- **ALB Health Check**: Configured to use `/auth/realms/master` (reliable alternative)
 
 ## Development Guidelines
 
@@ -110,6 +111,17 @@ Critical environment variables in container_definition.json:
 - TLS termination at ALB with ACM certificates
 
 ## Common Issues and Solutions
+
+### ALB Health Check 404 Error
+**Issue**: ALB Target Group health checks fail with 404 when using `/auth/health` path.
+
+**Root Cause**: Keycloak 26.4.4 requires `KC_HEALTH_ENABLED=true` to enable the `/health` endpoint.
+
+**Solutions**:
+1. **Quick Fix** (no redeployment): Update Target Group health check path to `/auth/realms/master` (returns 200)
+2. **Proper Fix** (requires redeployment): Container now includes `KC_HEALTH_ENABLED=true` and `KC_METRICS_ENABLED=true`
+
+**Status**: Fixed in template. Existing deployments can update health check path via AWS Console or CLI.
 
 ### Path Redirect Issue
 Keycloak 18+ no longer automatically redirects from `/` to `/auth`. Users must access via `<domain>/auth` directly.

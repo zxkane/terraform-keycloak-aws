@@ -81,6 +81,14 @@
         "value": "/auth"
       },
       {
+        "name": "KC_HEALTH_ENABLED",
+        "value": "true"
+      },
+      {
+        "name": "KC_METRICS_ENABLED",
+        "value": "true"
+      },
+      {
           "name": "ORG_MANAGER_HOST",
           "value": "${org_manager_host}"
       },
