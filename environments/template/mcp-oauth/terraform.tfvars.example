@@ -1,0 +1,198 @@
+# MCP OAuth Realm Configuration - Example Variables
+# Copy this file to terraform.tfvars and modify values as needed
+
+# ============================================================================
+# REQUIRED: Keycloak Connection Settings
+# ============================================================================
+
+# Keycloak admin password (REQUIRED - you must provide this)
+# This can be set via:
+#   - This file: keycloak_admin_password = "your-password"
+#   - Environment variable: export TF_VAR_keycloak_admin_password="your-password"
+#   - Command line: -var="keycloak_admin_password=your-password"
+#
+# keycloak_admin_password = ""  # UNCOMMENT AND SET YOUR PASSWORD
+
+# Keycloak URL (modify if your Keycloak uses a different path)
+# For Quarkus-based Keycloak 18+: "https://keycloak.example.com" (no /auth)
+# For Wildfly-based Keycloak: "https://keycloak.example.com/auth"
+keycloak_url = "https://keycloak.example.com/auth"
+
+# Keycloak admin username (change if you use a different admin username)
+keycloak_admin_username = "admin"
+
+
+# ============================================================================
+# Realm Configuration
+# ============================================================================
+
+# Realm name and display name
+realm_name         = "mcp"
+realm_display_name = "MCP OAuth Realm"
+
+
+# ============================================================================
+# Resource Server Configuration
+# ============================================================================
+
+# Your MCP Resource Server URI
+# This is used for:
+#   - JWT audience (aud) claim
+#   - Redirect URI validation
+#   - Resource Indicators (RFC 8707)
+resource_server_uri = "https://your-mcp-gateway.example.com/mcp"
+
+
+# ============================================================================
+# Client Configuration
+# ============================================================================
+
+# Client ID for the SPA application
+client_id = "mcp-spa-client"
+
+# Additional redirect URIs (add your application's callback URLs)
+# Format: ["https://app.example.com/callback", "http://localhost:3000/callback"]
+additional_redirect_uris = [
+  "http://localhost:3000/callback",
+  "http://localhost:3000/",
+  "http://localhost:3000/auth/callback",
+]
+
+# Additional web origins for CORS
+# Format: ["https://app.example.com", "http://localhost:3000"]
+# Use "*" for development only (not recommended for production)
+additional_web_origins = [
+  "http://localhost:3000",
+  "*",
+]
+
+
+# ============================================================================
+# Token Lifespan Configuration
+# ============================================================================
+
+# Access token lifespan (format: XhYmZs)
+# Default: 5 minutes
+access_token_lifespan = "5m"
+
+# Refresh token lifespan (format: XhYmZs or Xd for days)
+# Default: 30 days
+refresh_token_lifespan = "30d"
+
+# SSO session idle timeout (format: XhYmZs)
+# Default: 30 minutes
+sso_session_idle_timeout = "30m"
+
+# SSO session maximum lifespan (format: XhYmZs)
+# Default: 10 hours
+sso_session_max_lifespan = "10h"
+
+
+# ============================================================================
+# Security Settings
+# ============================================================================
+
+# Password policy (Keycloak format)
+# Default: min 12 chars, at least 1 uppercase, 1 lowercase, 1 digit, 1 special char
+password_policy = "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername()"
+
+# Brute force protection: max login failures before temporary lockout
+brute_force_max_failures = 5
+
+# Brute force protection: time in seconds before failure counter resets
+brute_force_failure_reset_time = 900  # 15 minutes
+
+# PKCE challenge method (S256 or plain)
+# NOTE: "S256" is REQUIRED for MCP compliance, only use "plain" for testing
+pkce_code_challenge_method = "S256"
+
+# SSL requirement (none, external, all)
+# "all" is RECOMMENDED for production
+ssl_required = "all"
+
+# Default signature algorithm for tokens
+# Options: RS256, RS384, RS512, ES256, ES384, ES512
+default_signature_algorithm = "RS256"
+
+
+# ============================================================================
+# Client Scopes
+# ============================================================================
+
+# Default scopes automatically assigned to clients
+# Default: ["openid", "profile", "email", "mcp:run", "offline_access"]
+default_scopes = [
+  "openid",
+  "profile",
+  "email",
+  "mcp:run",  # MCP-specific scope
+  "offline_access",  # Required for refresh tokens
+]
+
+# Optional scopes (require user consent)
+# Default: ["address", "phone", "microprofile-jwt"]
+optional_scopes = [
+  "address",
+  "phone",
+  "microprofile-jwt",
+]
+
+
+# ============================================================================
+# Advanced/Optional Settings
+# ============================================================================
+
+# SMTP Configuration (optional - uncomment and configure if you need email)
+# Enable SMTP for password reset, email verification, etc.
+# enable_smtp = false
+#
+# SMTP server host
+# smtp_host = "smtp.example.com"
+#
+# SMTP server port (usually 587 for TLS, 465 for SSL)
+# smtp_port = 587
+#
+# SMTP "from" address
+# smtp_from = "noreply@yourdomain.com"
+#
+# SMTP authentication credentials
+# smtp_username = "your-smtp-username"
+# smtp_password = "your-smtp-password"
+
+
+# ============================================================================
+# Tags (optional - for resource organization)
+# ============================================================================
+
+# Tags applied to Keycloak resources (if your version supports it)
+tags = {
+  Environment = "production"
+  Project     = "mcp-oauth"
+  ManagedBy   = "terraform"
+  Team        = "your-team-name"
+}
+
+
+# ============================================================================
+# USAGE INSTRUCTIONS
+# ============================================================================
+#
+# 1. Copy this file to terraform.tfvars:
+#    cp terraform.tfvars.example terraform.tfvars
+#
+# 2. Edit terraform.tfvars and set REQUIRED values:
+#    - keycloak_admin_password (REQUIRED)
+#    - resource_server_uri (if different from default)
+#    - additional_redirect_uris (your app's callback URLs)
+#
+# 3. Optional: Customize other settings as needed
+#
+# 4. Initialize and apply Terraform:
+#    terraform init
+#    terraform plan
+#    terraform apply
+#
+# 5. Review outputs for endpoints and configuration:
+#    terraform output
+#
+# ============================================================================

@@ -166,3 +166,109 @@ This prevents:
 - ECS service failing to start due to missing image
 - Failed health checks from a non-existent container
 - Unnecessary service error events in AWS console
+
+## MCP OAuth Configuration
+
+This project includes Terraform configuration for deploying MCP (Model Context Protocol) OAuth 2.0 authentication with Keycloak.
+
+### Location
+
+```
+environments/
+├── template/mcp-oauth/           # Template for new deployments
+└── <env-name>/mcp-oauth/         # Environment-specific deployments
+```
+
+### Quick Deployment
+
+```bash
+cd environments/<env-name>/mcp-oauth
+
+# Configure
+cp terraform.tfvars.example terraform.tfvars
+vim terraform.tfvars  # Set keycloak_admin_password and resource_server_uri
+
+# Deploy
+make deploy
+```
+
+### Key Features
+
+- **Dynamic Client Registration (RFC 7591)**: MCP clients can self-register
+- **PKCE (RFC 7636)**: All clients use PKCE with S256
+- **Resource Indicators (RFC 8707)**: Audience-based authorization
+- **Realm Default Scopes**: DCR clients automatically get `mcp:run` scope
+- **Audience Mapper**: Automatic JWT `aud` claim injection
+
+### Configuration Files
+
+**Terraform Resources:**
+- `mcp-realm.tf` - Realm configuration
+- `mcp-scopes.tf` - Client scopes and audience mapper
+- `mcp-realm-scopes.tf` - Realm default scopes (critical for DCR)
+- `mcp-client.tf` - Example clients (commented out)
+- `provider.tf`, `variables.tf`, `outputs.tf`
+
+**Deployment Scripts:**
+- `deploy.sh` - Integrated deployment
+- `fix-allowed-scopes.sh` - Configure DCR allowed scopes
+- `update-dcr-policy.sh` - Configure DCR trusted hosts
+- `enable-dcr.sh` - Test DCR
+
+### Deployment Steps
+
+1. **Terraform Resources** (Phase 1): `terraform apply`
+2. **DCR Policies** (Phase 2): `./fix-allowed-scopes.sh && ./update-dcr-policy.sh`
+3. **Verify** (Phase 3): `./enable-dcr.sh`
+
+Or use: `make deploy` (runs all phases automatically)
+
+### MCP Client Integration
+
+```bash
+# Add MCP server
+claude mcp add --transport http <name> <gateway-url>
+
+# Authenticate
+> /mcp
+```
+
+MCP clients will:
+1. Discover Authorization Server via metadata
+2. Register via DCR (automatically gets `mcp:run` scope)
+3. Use PKCE for authorization
+4. Receive JWT with correct `aud` claim
+5. Connect to MCP gateway successfully
+
+### Important Notes
+
+**Terraform Provider Limitation:**
+- Cannot manage Client Registration Policies
+- Must use provided scripts for DCR configuration
+- All scripts are version-controlled and idempotent
+
+**Critical Configuration:**
+- `mcp:run` MUST be in Realm default scopes (configured in `mcp-realm-scopes.tf`)
+- Audience mapper MUST be attached to `mcp:run` scope (configured in `mcp-scopes.tf`)
+- DCR policies MUST allow `mcp:run` scope (configured via `fix-allowed-scopes.sh`)
+
+### Documentation
+
+See `environments/template/mcp-oauth/README.md` and `docs/` directory for:
+- Detailed deployment guide
+- Script execution order
+- Terraform limitations
+- Troubleshooting guide
+- MCP specification compliance
+
+### Troubleshooting
+
+**MCP client auth succeeds but connection fails:**
+1. Check client has `mcp:run` scope (Admin Console)
+2. Verify token `aud` claim matches gateway URL
+3. Recreate client connection (will get updated default scopes)
+
+**DCR fails:**
+1. Run `./fix-allowed-scopes.sh` (add `mcp:run` to allowed scopes)
+2. Run `./update-dcr-policy.sh` (configure trusted hosts)
+3. Run `./enable-dcr.sh` (verify)
