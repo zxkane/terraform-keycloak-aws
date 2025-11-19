@@ -1,5 +1,6 @@
 # Contents
 
+- [Recent Enhancements](#recent-enhancements)
 - [Introduction](#introduction)
 - [Prerequisites](#prerequisites)
 - [Workflow](#workflow)
@@ -9,6 +10,54 @@
 - [Dependencies](#dependencies)
 - [References](#references)
 - [FAQ](#FAQ)
+
+## Recent Enhancements
+
+### 🚀 Keycloak 26.4.4 Upgrade (November 2024)
+
+Major version upgrade from 24.0.1 to 26.4.4 with production-tested configuration:
+
+- **Modern Proxy Configuration**: Updated from deprecated `KC_PROXY=edge` to `KC_PROXY_HEADERS=xforwarded`
+- **Enhanced Monitoring**: Built-in health (`/auth/health`) and metrics (`/auth/metrics`) endpoints
+- **Improved Health Checks**: ALB health check path updated to reliable `/auth/realms/master` endpoint
+- **Database Requirements**: PostgreSQL 13+ for compatibility
+- **Zero-Downtime Support**: JDBC_PING clustering for seamless upgrades
+
+See [CLAUDE.md](CLAUDE.md) for detailed upgrade notes and breaking changes.
+
+### 🔐 MCP OAuth 2.1 Integration (November 2024)
+
+Complete OAuth 2.1/OIDC infrastructure for Model Context Protocol (MCP) clients:
+
+- **Dynamic Client Registration (DCR)**: RFC 7591 compliant, enabling Claude Code, Cursor, and VS Code integration
+- **Audience-Based Authorization**: RFC 8807 resource indicators with automatic JWT `aud` claim injection
+- **PKCE Enforcement**: S256 code challenge for secure public client flows
+- **Automated Deployment**: One-command deployment (`make deploy`) with integrated DCR policy configuration
+- **Comprehensive Documentation**: Complete setup guide in [environments/template/mcp-oauth/](environments/template/mcp-oauth/)
+
+**Key Features**:
+- Realm default scopes auto-configuration (DCR clients inherit `mcp:run` scope)
+- Anonymous DCR support (no trusted hosts restrictions for cursor://, vscode:// URIs)
+- Audience protocol mapper for seamless gateway integration
+- Complete test suite for validation
+
+**Quick Start**:
+```bash
+cd environments/<env-name>/mcp-oauth
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your configuration
+make deploy
+```
+
+### 🔧 Production-Ready Improvements
+
+Recent enhancements ensure robust production deployments:
+
+- **Health Check Reliability**: Fallback to `/auth/realms/master` prevents false negatives during startup
+- **Monitoring Enabled**: `KC_HEALTH_ENABLED=true` and `KC_METRICS_ENABLED=true` by default
+- **Container Optimization**: Fixed build-time vs runtime configuration consistency
+- **Path Normalization**: Updated handling for HTTP requests with `..` or `//` sequences
+- **Automated MCP Client Configuration**: Deploy script automatically configures Keycloak for Claude Code/Cursor/VS Code
 
 ## Introduction
 
@@ -187,6 +236,18 @@ Abandon hope all ye who enter here... :-)
 Q: `The target group with targetGroupArn <arn> does not have an associated load balancer.`
 
 A: This is rare, but if it happens to you just re-run `make all` (double apply), perhaps waiting a few minutes in between.
+
+Q: How do I integrate Claude Code or other MCP clients with Keycloak?
+
+A: See the complete setup guide in [environments/template/mcp-oauth/](environments/template/mcp-oauth/). The infrastructure supports Dynamic Client Registration (DCR) out of the box - simply copy the template to your environment, configure variables, and run `make deploy`. Claude Code will automatically discover and register with your Keycloak realm.
+
+Q: Why is my ALB health check failing after upgrading to Keycloak 26.4.4?
+
+A: Keycloak 26.4.4 requires `KC_HEALTH_ENABLED=true` for the `/auth/health` endpoint. The updated configuration uses `/auth/realms/master` as a reliable alternative health check path. For existing deployments, either update your Target Group health check path or redeploy with the latest container configuration that includes `KC_HEALTH_ENABLED=true`.
+
+Q: What Keycloak version is currently supported?
+
+A: Keycloak **26.4.4** (upgraded from 24.0.1 in November 2024). This version requires PostgreSQL 13+ and includes important security and performance improvements. See [CLAUDE.md](CLAUDE.md) for detailed upgrade notes.
 
 Q: How do I get support?
 
