@@ -64,9 +64,10 @@ Recent enhancements ensure robust production deployments:
 **NOTE:** I spin releases for the latest Keycloak versions avoiding "dot ohs"
 e.g. 15.1.1+ but not 15.1.0.
 
-Opinionated infrastructure and deployment automation for Keycloak.
+Opinionated infrastructure and deployment automation for Keycloak on AWS Fargate with MCP OAuth 2.1 authentication support.
 
 - Batteries included (network plumbing + container build/deploy) 🚀
+- MCP OAuth 2.1 compatible (DCR, PKCE, audience-based authorization) 🔐
 - Tested with latest Terraform 😍
 - Prefer fully-managed backing services (Fargate, Aurora, CloudWatch) 🥱
 - JDBC clustering and cache replication (improved HA) 🤙
