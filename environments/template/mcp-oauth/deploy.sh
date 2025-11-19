@@ -222,8 +222,8 @@ case "$ACTION" in
         echo "=========================================="
         echo ""
         echo "Claude Code command:"
-        echo "  claude mcp add --transport http xiaozhi2 \\"
-        echo "    https://xiaozhi2-logs5gh9ak.gateway.bedrock-agentcore.us-west-2.amazonaws.com/mcp"
+        echo "  claude mcp add --transport http <gateway-name> \\"
+        echo "    ${RESOURCE_SERVER_URI}"
         echo ""
         echo "Then in Claude Code: /mcp"
         ;;

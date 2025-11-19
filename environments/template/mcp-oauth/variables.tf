@@ -5,7 +5,7 @@
 variable "keycloak_url" {
   description = "Keycloak base URL (include /auth for Wildfly, omit for Quarkus)"
   type        = string
-  default     = "https://auth.aws.kane.mx/auth"
+  default     = "https://keycloak.example.com/auth"
 }
 
 variable "keycloak_admin_username" {
@@ -39,7 +39,7 @@ variable "realm_display_name" {
 variable "resource_server_uri" {
   description = "MCP Resource Server URI (used for audience mapping and redirect URIs)"
   type        = string
-  default     = "https://xiaozhi2-logs5gh9ak.gateway.bedrock-agentcore.us-west-2.amazonaws.com/mcp"
+  default     = "https://your-mcp-gateway.example.com/mcp"
 }
 
 # Client Configuration
