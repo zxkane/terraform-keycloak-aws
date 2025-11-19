@@ -41,83 +41,129 @@ get_admin_token() {
         | jq -r '.access_token'
 }
 
-# Configure DCR policies using Components API
-configure_dcr_policies() {
+# Delete Trusted Hosts policy to allow all redirect URI schemes (MCP clients)
+delete_trusted_hosts_policy() {
     local admin_token=$1
 
-    echo -e "${BLUE}Configuring Client Registration Policies...${NC}"
+    echo -e "${BLUE}Disabling Trusted Hosts Policy (for MCP clients)...${NC}"
 
-    # Find Trusted Hosts component
+    # Find Trusted Hosts component for anonymous DCR
     COMPONENT_ID=$(curl -s -X GET \
         "${KEYCLOAK_URL}/admin/realms/${REALM}/components" \
         -H "Authorization: Bearer ${admin_token}" \
-        | jq -r '.[] | select(.providerId == "trusted-hosts" and .providerType == "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy") | .id' \
+        | jq -r '.[] | select(.providerId == "trusted-hosts" and .providerType == "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy" and .subType == "anonymous") | .id' \
         | head -1)
 
     if [ -z "$COMPONENT_ID" ] || [ "$COMPONENT_ID" == "null" ]; then
-        echo -e "${YELLOW}⚠ Trusted Hosts component not found${NC}"
-        return 1
+        echo -e "${YELLOW}⚠ Trusted Hosts component not found (may already be deleted)${NC}"
+        return 0
     fi
 
     echo "  Found component: $COMPONENT_ID"
+    echo "  Deleting to allow cursor://, vscode://, and all URI schemes..."
 
-    # Update policy
-    RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X PUT \
+    # Delete the component
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
         "${KEYCLOAK_URL}/admin/realms/${REALM}/components/${COMPONENT_ID}" \
-        -H "Authorization: Bearer ${admin_token}" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "id": "'"${COMPONENT_ID}"'",
-            "name": "Trusted Hosts",
-            "providerId": "trusted-hosts",
-            "providerType": "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy",
-            "parentId": "'"${REALM}"'",
-            "config": {
-                "host-sending-registration-request-must-match": ["false"],
-                "client-uris-must-match": ["true"],
-                "trusted-hosts": ["localhost", "127.0.0.1"]
-            }
-        }')
+        -H "Authorization: Bearer ${admin_token}")
 
-    HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
-
-    if [ "$HTTP_STATUS" == "204" ] || [ "$HTTP_STATUS" == "200" ]; then
-        echo -e "${GREEN}  ✓ Trusted Hosts policy updated${NC}"
+    if [ "$HTTP_CODE" == "204" ] || [ "$HTTP_CODE" == "200" ]; then
+        echo -e "${GREEN}  ✓ Trusted Hosts policy deleted${NC}"
+        echo -e "  ${GREEN}✓ MCP clients (Claude Code, Cursor, VS Code) can now register${NC}"
         return 0
     else
-        echo -e "${YELLOW}  ⚠ Update returned HTTP $HTTP_STATUS${NC}"
+        echo -e "${YELLOW}  ⚠ Delete returned HTTP $HTTP_CODE${NC}"
         return 1
     fi
 }
 
-# Test DCR
-test_dcr() {
-    echo -e "${BLUE}Testing Dynamic Client Registration...${NC}"
+# Configure Realm Default Scopes to include mcp:run
+configure_realm_default_scopes() {
+    local admin_token=$1
 
+    echo -e "${BLUE}Configuring Realm Default Scopes...${NC}"
+
+    # Get mcp:run scope ID
+    MCP_RUN_ID=$(curl -s -X GET \
+        "${KEYCLOAK_URL}/admin/realms/${REALM}/client-scopes" \
+        -H "Authorization: Bearer ${admin_token}" \
+        | jq -r '.[] | select(.name == "mcp:run") | .id')
+
+    if [ -z "$MCP_RUN_ID" ] || [ "$MCP_RUN_ID" == "null" ]; then
+        echo -e "${YELLOW}⚠ mcp:run scope not found${NC}"
+        return 1
+    fi
+
+    echo "  mcp:run scope ID: $MCP_RUN_ID"
+
+    # Check if already in realm defaults
+    HAS_SCOPE=$(curl -s -X GET \
+        "${KEYCLOAK_URL}/admin/realms/${REALM}/default-default-client-scopes" \
+        -H "Authorization: Bearer ${admin_token}" \
+        | jq -r '.[] | select(.name == "mcp:run") | .id')
+
+    if [ -n "$HAS_SCOPE" ]; then
+        echo -e "${GREEN}  ✓ mcp:run already in realm default scopes${NC}"
+        return 0
+    fi
+
+    # Add to realm default scopes
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
+        "${KEYCLOAK_URL}/admin/realms/${REALM}/default-default-client-scopes/${MCP_RUN_ID}" \
+        -H "Authorization: Bearer ${admin_token}")
+
+    if [ "$HTTP_CODE" == "204" ] || [ "$HTTP_CODE" == "200" ]; then
+        echo -e "${GREEN}  ✓ mcp:run added to realm default scopes${NC}"
+        echo -e "  ${GREEN}✓ All new DCR clients will auto-inherit mcp:run${NC}"
+        return 0
+    else
+        echo -e "${YELLOW}  ⚠ Update returned HTTP $HTTP_CODE${NC}"
+        return 1
+    fi
+}
+
+# Test DCR with MCP client URI schemes
+test_dcr() {
+    echo -e "${BLUE}Testing Dynamic Client Registration (MCP clients)...${NC}"
+
+    # Test with cursor:// URI (used by Claude Code and Cursor)
     TEST_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
         "${KEYCLOAK_URL}/realms/${REALM}/clients-registrations/openid-connect" \
         -H "Content-Type: application/json" \
         -d "{
-            \"client_name\": \"test-dcr-$(date +%s)\",
-            \"redirect_uris\": [\"http://localhost:3000/callback\"]
+            \"client_name\": \"test-mcp-dcr-$(date +%s)\",
+            \"redirect_uris\": [\"cursor://test/callback\", \"http://localhost:3000/callback\"],
+            \"grant_types\": [\"authorization_code\", \"refresh_token\"],
+            \"response_types\": [\"code\"],
+            \"token_endpoint_auth_method\": \"none\"
         }")
 
     HTTP_STATUS=$(echo "$TEST_RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
     BODY=$(echo "$TEST_RESPONSE" | sed '/HTTP_STATUS/d')
 
     if [ "$HTTP_STATUS" == "201" ] || [ "$HTTP_STATUS" == "200" ]; then
-        echo -e "${GREEN}✓ DCR working!${NC}"
+        echo -e "${GREEN}✓ DCR working with MCP client URIs!${NC}"
         CLIENT_ID=$(echo "$BODY" | jq -r '.client_id')
         echo "  Client ID: $CLIENT_ID"
-        
+        echo "  Redirect URIs: cursor://test/callback, http://localhost:3000/callback"
+
+        # Check if mcp:run is in default scopes
+        echo -e "${BLUE}  Verifying mcp:run scope...${NC}"
+        SCOPES=$(echo "$BODY" | jq -r '.scope // "unknown"')
+        if echo "$SCOPES" | grep -q "mcp:run"; then
+            echo -e "${GREEN}  ✓ mcp:run scope present${NC}"
+        else
+            echo -e "${YELLOW}  ⚠ mcp:run scope missing (may need manual configuration)${NC}"
+        fi
+
         # Cleanup
         REG_TOKEN=$(echo "$BODY" | jq -r '.registration_access_token')
         curl -s -X DELETE \
             "${KEYCLOAK_URL}/realms/${REALM}/clients-registrations/openid-connect/${CLIENT_ID}" \
-            -H "Authorization: Bearer ${REG_TOKEN}" > /dev/null
+            -H "Authorization: Bearer ${REG_TOKEN}" > /dev/null 2>&1
         return 0
     else
-        echo -e "${YELLOW}⚠ DCR still blocked (HTTP $HTTP_STATUS)${NC}"
+        echo -e "${YELLOW}⚠ DCR failed (HTTP $HTTP_STATUS)${NC}"
         echo "$BODY" | jq '.'
         return 1
     fi
@@ -142,7 +188,7 @@ case "$ACTION" in
 
         echo ""
         echo "=========================================="
-        echo "Phase 2: Client Registration Policies"
+        echo "Phase 2: MCP Client Configuration"
         echo "=========================================="
 
         ADMIN_PASS=$(get_admin_password)
@@ -160,7 +206,16 @@ case "$ACTION" in
             exit 0
         fi
 
-        configure_dcr_policies "$ADMIN_TOKEN" && test_dcr
+        # Configure for MCP clients (Claude Code, Cursor, VS Code)
+        delete_trusted_hosts_policy "$ADMIN_TOKEN"
+        configure_realm_default_scopes "$ADMIN_TOKEN"
+
+        echo ""
+        echo "Running scripts for additional DCR configuration..."
+        ./fix-allowed-scopes.sh || echo -e "${YELLOW}⚠ fix-allowed-scopes.sh not available${NC}"
+
+        echo ""
+        test_dcr
 
         echo ""
         echo "=========================================="
