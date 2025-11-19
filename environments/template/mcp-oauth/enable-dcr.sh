@@ -6,14 +6,22 @@
 
 set -euo pipefail
 
-KEYCLOAK_URL="https://auth.aws.kane.mx/auth"
-REALM="mcp"
-ADMIN_USER="keycloak_admin"
-ADMIN_PASS="fX0a4m2a5rqsMUlApqLctL4tdpYIFx"
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load configuration from terraform.tfvars
+source "${SCRIPT_DIR}/load-config.sh"
+
+# Use variables from config
+REALM="${REALM_NAME}"
+ADMIN_USER="${KEYCLOAK_ADMIN_USERNAME}"
+ADMIN_PASS="${KEYCLOAK_ADMIN_PASSWORD}"
 
 echo "=========================================="
 echo "Enable MCP Dynamic Client Registration"
 echo "=========================================="
+echo "Keycloak URL: ${KEYCLOAK_URL}"
+echo "Realm: ${REALM}"
 echo ""
 
 # Step 1: Get admin token

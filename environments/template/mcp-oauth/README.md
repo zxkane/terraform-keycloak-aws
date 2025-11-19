@@ -59,19 +59,14 @@ This will:
 
 | Script | Purpose | When to Run |
 |--------|---------|-------------|
+| `load-config.sh` | Load configuration from terraform.tfvars | Sourced by other scripts |
 | `deploy.sh` | Integrated deployment (Terraform + Policies) | Initial deployment |
 | `Makefile` | Simplified commands | All operations |
-| `fix-allowed-scopes.sh` | Configure DCR allowed scopes | After Terraform apply |
-| `update-dcr-policy.sh` | Configure DCR trusted hosts | After Terraform apply |
+| `fix-allowed-scopes.sh` | Configure DCR allowed scopes (includes mcp:run) | After Terraform apply |
+| `disable-trusted-hosts.sh` | Disable Trusted Hosts policy (allows cursor://, vscode://) | After Terraform apply |
 | `enable-dcr.sh` | Test DCR endpoint | Verify deployment |
 
-### Test Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `test-dcr-full-flow.sh` | Complete DCR + OAuth + MCP protocol test |
-| `test-oauth-flow.sh` | OAuth + PKCE flow test |
-| `quick-test.sh` | Quick token and gateway validation |
+**Note**: All scripts now dynamically load configuration from `terraform.tfvars` via `load-config.sh`. No hardcoded credentials or URLs.
 
 ## Deployment Architecture
 
@@ -105,8 +100,10 @@ Creates:
 **Why scripts?** Terraform Provider limitation - cannot manage Client Registration Policies.
 
 Configures:
-- Allowed Client Scopes (must include `mcp:run`)
-- Trusted Hosts (controls DCR access)
+- **Allowed Client Scopes** - Adds `mcp:run` to DCR allowed scopes list
+- **Trusted Hosts Policy** - Completely disabled to allow ALL redirect URI schemes
+  - Enables cursor://, vscode://, and other custom schemes
+  - Required for Claude Code, Cursor, VS Code, and similar MCP clients
 
 ## Step-by-Step Deployment
 
@@ -128,8 +125,8 @@ terraform apply
 # See "Creating Users" section below for details
 
 # Phase 3: DCR Policies
-./fix-allowed-scopes.sh
-./update-dcr-policy.sh
+./fix-allowed-scopes.sh       # Add mcp:run to allowed scopes
+./disable-trusted-hosts.sh    # Allow cursor://, vscode://, and all URI schemes
 
 # Phase 4: Verify
 ./enable-dcr.sh
@@ -141,12 +138,14 @@ terraform apply
 
 ```
 1. terraform init
-2. terraform apply          # Creates realm, scopes, default scopes
-3. [Create users]           # Via Admin Console - Required for OAuth login
-4. fix-allowed-scopes.sh    # Adds mcp:run to DCR allowed scopes
-5. update-dcr-policy.sh     # Configures trusted hosts
-6. enable-dcr.sh            # Tests DCR (optional)
+2. terraform apply              # Creates realm, scopes, realm default scopes
+3. [Create users]               # Via Admin Console - Required for OAuth login
+4. fix-allowed-scopes.sh        # Adds mcp:run to DCR allowed scopes
+5. disable-trusted-hosts.sh     # Disables Trusted Hosts policy (allows all URI schemes)
+6. enable-dcr.sh                # Tests DCR (optional)
 ```
+
+**Note**: `deploy.sh` automatically runs steps 1, 2, 4, and 5. You still need to create users manually (step 3).
 
 ## Configuration
 

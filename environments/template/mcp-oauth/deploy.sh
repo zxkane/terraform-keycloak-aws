@@ -13,20 +13,19 @@ cd "$SCRIPT_DIR"
 
 ACTION="${1:-apply}"
 
-KEYCLOAK_URL="https://auth.aws.kane.mx/auth"
-REALM="mcp"
-ADMIN_USER="keycloak_admin"
+# Load configuration from terraform.tfvars
+source "${SCRIPT_DIR}/load-config.sh"
+
+# Use variables from config
+REALM="${REALM_NAME}"
+ADMIN_USER="${KEYCLOAK_ADMIN_USERNAME}"
+ADMIN_PASS="${KEYCLOAK_ADMIN_PASSWORD}"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
-
-# Get admin password from terraform.tfvars
-get_admin_password() {
-    grep "^keycloak_admin_password" terraform.tfvars 2>/dev/null | cut -d'"' -f2
-}
 
 # Get admin token
 get_admin_token() {
@@ -191,11 +190,11 @@ case "$ACTION" in
         echo "Phase 2: MCP Client Configuration"
         echo "=========================================="
 
-        ADMIN_PASS=$(get_admin_password)
-
+        # ADMIN_PASS already loaded from load-config.sh
         if [ -z "$ADMIN_PASS" ]; then
             echo -e "${YELLOW}⚠ Admin password not found${NC}"
-            echo "  Run manually: ./update-dcr-policy.sh"
+            echo "  Set keycloak_admin_password in terraform.tfvars"
+            echo "  Or run manually: ./fix-allowed-scopes.sh && ./disable-trusted-hosts.sh"
             exit 0
         fi
 
