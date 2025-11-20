@@ -10,7 +10,7 @@ resource "random_string" "namespace" {
 }
 
 module "terraform_state_backend" {
-  source                             = "git::https://github.com/cloudposse/terraform-aws-tfstate-backend.git?ref=tags/1.4.1"
+  source                             = "git::https://github.com/cloudposse/terraform-aws-tfstate-backend.git?ref=tags/1.7.1"
   environment                        = var.environment
   name                               = var.name
   namespace                          = random_string.namespace.result
