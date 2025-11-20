@@ -50,3 +50,14 @@ output "state_table" {
 output "state_bucket" {
   value = module.terraform_state_backend.s3_bucket_domain_name
 }
+
+# Outputs for MCP OAuth sub-configuration
+output "keycloak_url" {
+  description = "Keycloak base URL (for use in mcp-oauth configuration)"
+  value       = "https://${var.dns_name}/auth"
+}
+
+output "keycloak_admin_password_ssm_parameter" {
+  description = "AWS Parameter Store path for Keycloak admin password"
+  value       = "/keycloak/${var.environment}/KEYCLOAK_PASSWORD"
+}

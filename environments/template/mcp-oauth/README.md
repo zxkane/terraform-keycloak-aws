@@ -149,15 +149,88 @@ terraform apply
 
 ## Configuration
 
-### Required Variables
+### Getting Configuration Values from Parent Keycloak Deployment
 
-Edit `terraform.tfvars`:
+The MCP OAuth configuration requires values from the parent Keycloak deployment. Here's how to get them:
+
+#### 1. Get Keycloak URL
+
+From parent Keycloak deployment directory:
+
+```bash
+cd ../  # Go to parent directory (environments/<your-env>/)
+grep "dns_name" terraform.tfvars
+# Output: dns_name = "auth.example.com"
+
+# Use in mcp-oauth/terraform.tfvars:
+# keycloak_url = "https://auth.example.com/auth"
+```
+
+#### 2. Get Keycloak Admin Password
+
+From AWS SSM Parameter Store:
+
+```bash
+# Get environment and region from parent tfvars
+ENV=$(grep "environment" ../terraform.tfvars | cut -d'"' -f2)
+REGION=$(grep "region" ../terraform.tfvars | cut -d'"' -f2)
+
+# Retrieve password from SSM
+aws ssm get-parameter \
+  --name "/keycloak/${ENV}/KEYCLOAK_PASSWORD" \
+  --with-decryption \
+  --region "${REGION}" \
+  --query 'Parameter.Value' \
+  --output text
+```
+
+#### 3. Get MCP Gateway URL (Resource Server URI)
+
+This is **independent** from Keycloak and must be provided by you:
+
+**Option A**: From existing Bedrock Agent Gateway:
+```bash
+aws bedrock-agentcore-control get-gateway \
+  --region us-west-2 \
+  --gateway-identifier <your-gateway-id> \
+  --query 'gatewayUrl' \
+  --output text
+```
+
+**Option B**: Create new Gateway:
+```bash
+aws bedrock-agentcore-control create-gateway \
+  --region us-west-2 \
+  --name my-mcp-gateway \
+  --protocol-type MCP \
+  --role-arn <service-role-arn>
+# Note the gatewayUrl in the response
+```
+
+#### 4. Configure terraform.tfvars
+
+```bash
+cd mcp-oauth/
+cp terraform.tfvars.example terraform.tfvars
+vim terraform.tfvars
+```
+
+Fill in the values from steps 1-3:
 
 ```hcl
-keycloak_admin_password = "your-secure-password"
-resource_server_uri = "https://your-gateway.example.com/mcp"
-keycloak_url = "https://keycloak.example.com/auth"
-keycloak_admin_username = "admin"
+keycloak_url = "https://auth.example.com/auth"          # From step 1
+keycloak_admin_password = "your-secure-password"        # From step 2
+resource_server_uri = "https://your-gateway-url/mcp"    # From step 3
+```
+
+### Alternative: Semi-Automated Script
+
+Use `init-from-parent.sh` to automatically populate most values:
+
+```bash
+cd mcp-oauth/
+./init-from-parent.sh --gateway-url "https://your-gateway-url/mcp"
+# This will read parent tfvars and generate terraform.tfvars
 ```
 
 See `terraform.tfvars.example` for all options.
