@@ -20,26 +20,43 @@ This configuration creates a complete MCP OAuth realm that supports:
 
 - Terraform >= 1.0
 - Keycloak >= 18.0 (Quarkus-based recommended)
-- Keycloak admin credentials
+- Parent Keycloak deployment completed
 - MCP Resource Server URL (your MCP gateway)
 
-### One-Command Deployment
+### Recommended: Semi-Automated Deployment
 
 ```bash
-# 1. Configure
-cp terraform.tfvars.example terraform.tfvars
-vim terraform.tfvars  # Set keycloak_admin_password and resource_server_uri
+# 1. Auto-generate configuration from parent Keycloak deployment
+./init-from-parent.sh --gateway-url "https://your-gateway-url/mcp"
 
 # 2. Deploy
 make deploy
 ```
 
-This will:
+The script will automatically:
+- ✅ Read Keycloak URL from parent deployment
+- ✅ Retrieve admin password from AWS SSM
+- ✅ Generate complete `terraform.tfvars`
+
+Then `make deploy` will:
 1. Initialize Terraform
 2. Apply Terraform resources (Realm, Scopes, Clients)
 3. Configure Client Registration Policies (via REST API)
 4. Test Dynamic Client Registration
 5. Display usage instructions
+
+### Alternative: Manual Configuration
+
+```bash
+# 1. Configure manually
+cp terraform.tfvars.example terraform.tfvars
+vim terraform.tfvars  # Set keycloak_url, keycloak_admin_password, resource_server_uri
+
+# 2. Deploy
+make deploy
+```
+
+See [Getting Configuration Values](#getting-configuration-values-from-parent-keycloak-deployment) section for how to obtain the required values.
 
 ## Configuration Files
 
@@ -223,17 +240,25 @@ keycloak_admin_password = "your-secure-password"        # From step 2
 resource_server_uri = "https://your-gateway-url/mcp"    # From step 3
 ```
 
-### Alternative: Semi-Automated Script
+### Recommended: Use init-from-parent.sh
 
-Use `init-from-parent.sh` to automatically populate most values:
+Instead of manually following steps 1-4, use the `init-from-parent.sh` script:
 
 ```bash
 cd mcp-oauth/
 ./init-from-parent.sh --gateway-url "https://your-gateway-url/mcp"
-# This will read parent tfvars and generate terraform.tfvars
 ```
 
-See `terraform.tfvars.example` for all options.
+This script will automatically:
+- Read Keycloak URL from parent `terraform.tfvars` (step 1)
+- Retrieve admin password from AWS SSM (step 2)
+- Use your provided Gateway URL (step 3)
+- Generate complete `terraform.tfvars` (step 4)
+
+Then proceed with deployment:
+```bash
+make deploy
+```
 
 ## Creating Users
 

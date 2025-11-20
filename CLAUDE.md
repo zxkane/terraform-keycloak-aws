@@ -193,16 +193,32 @@ environments/
 
 ### Quick Deployment
 
+**Recommended: Semi-Automated**
+
 ```bash
 cd environments/<env-name>/mcp-oauth
 
-# Configure
-cp terraform.tfvars.example terraform.tfvars
-vim terraform.tfvars  # Set keycloak_admin_password and resource_server_uri
+# Auto-generate configuration from parent Keycloak deployment
+./init-from-parent.sh --gateway-url "https://your-gateway-url/mcp"
 
 # Deploy
 make deploy
 ```
+
+**Alternative: Manual Configuration**
+
+```bash
+cd environments/<env-name>/mcp-oauth
+
+# Configure manually
+cp terraform.tfvars.example terraform.tfvars
+vim terraform.tfvars  # Set keycloak_url, keycloak_admin_password, resource_server_uri
+
+# Deploy
+make deploy
+```
+
+See [environments/template/mcp-oauth/README.md](environments/template/mcp-oauth/README.md) for detailed configuration guide.
 
 ### Key Features
 
