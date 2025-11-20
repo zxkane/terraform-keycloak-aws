@@ -43,11 +43,21 @@ Complete OAuth 2.1/OIDC infrastructure for Model Context Protocol (MCP) clients:
 
 **Quick Start**:
 ```bash
+# Recommended: Semi-automated setup
 cd environments/<env-name>/mcp-oauth
+./init-from-parent.sh --gateway-url "https://your-gateway-url/mcp"
+make deploy
+
+# Alternative: Manual configuration
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your configuration
+vim terraform.tfvars  # Set keycloak_url, admin password, gateway URL
 make deploy
 ```
+
+**Complete Guide**: See [environments/template/mcp-oauth/README.md](environments/template/mcp-oauth/README.md) for:
+- Configuration value sources and retrieval methods
+- Deployment steps and script execution order
+- Troubleshooting and testing procedures
 
 ### 🔧 Production-Ready Improvements
 
