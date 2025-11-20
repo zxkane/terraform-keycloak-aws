@@ -7,8 +7,8 @@ resource "keycloak_realm_default_client_scopes" "mcp_realm_defaults" {
   realm_id = keycloak_realm.mcp.id
 
   # Default scopes - automatically included in all tokens
+  # Note: "openid" is not a client scope in Keycloak, it's handled at protocol level
   default_scopes = [
-    "openid",       # OpenID Connect core (Keycloak built-in)
     "profile",      # User profile (Keycloak built-in)
     "email",        # User email (Keycloak built-in)
     "mcp:run",      # MCP operations (our custom scope) ← CRITICAL for MCP
