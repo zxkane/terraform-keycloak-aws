@@ -63,3 +63,30 @@ log_retention_days                 = 5
 db_instance_type         = "db.r6g.large"
 db_backup_retention_days = 5
 db_cluster_size          = 2
+
+# Aurora PostgreSQL Configuration
+# Keycloak 26.4.4 official requirement: PostgreSQL 13.x minimum
+#
+# ⚠️ IMPORTANT: db_cluster_family MUST match the major version of db_engine_version
+# Version mapping:
+#   PostgreSQL 17.x → aurora-postgresql17
+#   PostgreSQL 16.x → aurora-postgresql16
+#   PostgreSQL 15.x → aurora-postgresql15
+#   PostgreSQL 14.x → aurora-postgresql14
+#   PostgreSQL 13.x → aurora-postgresql13
+db_cluster_family        = "aurora-postgresql16"
+
+# Engine version selection:
+# Recommended: 16.8 (default) - Modern, stable, excellent performance
+# Alternative options:
+#   - 17.4: Latest with newest features (use with caution, may have unknown issues)
+#   - 15.13/15.12: Conservative stable (LTS, widely tested)
+#   - 14.17: Stable but 16.x preferred
+#   - 13.20: Minimum requirement only, approaching EOL (not recommended)
+#
+# Check available versions for your region:
+# aws rds describe-db-engine-versions --engine aurora-postgresql --region <region> \
+#   --query 'DBEngineVersions[*].EngineVersion' --output text | tr '\t' '\n' | sort -V
+#
+# ⚠️ If you change this version, also update db_cluster_family above!
+db_engine_version        = "16.8"  # Recommended: Best balance of modern features and stability

@@ -42,9 +42,9 @@ variable "db_backup_window" {
 }
 
 variable "db_cluster_family" {
-  description = "Family of DB cluster parameter group"
+  description = "Family of DB cluster parameter group (must match major version of db_engine_version)"
   type        = string
-  default     = "aurora-postgresql15"
+  default     = "aurora-postgresql16"  # Matches PostgreSQL 16.x
 }
 
 variable "db_cluster_size" {
@@ -53,9 +53,9 @@ variable "db_cluster_size" {
 }
 
 variable "db_engine_version" {
-  description = "Version of DB engine to use"
+  description = "Aurora PostgreSQL engine version (Keycloak 26.4.4 requires PostgreSQL 13+)"
   type        = string
-  default     = "15.4"
+  default     = "16.8"  # Recommended: Modern, stable, excellent performance
 }
 
 variable "db_instance_type" {
