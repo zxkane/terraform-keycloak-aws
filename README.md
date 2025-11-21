@@ -108,26 +108,65 @@ The basic workflow relies on make to reduce typing toil.
 If you are just getting started, refer to
 [the bootstrapping guide](https://github.com/deadlysyn/terraform-keycloak-aws/blob/main/docs/bootstrapping.md).
 
+### Initial Deployment (New Environment)
+
+**⚠️ IMPORTANT:** For new environments, you must follow this 4-step process to avoid
+ECS service startup failures (since the ECR repository starts empty):
+
 ```console
-# Create new environment
+# Step 1: Create infrastructure with desired_count = 0
 $ cd environments
 $ ./mkenv -e <env_name>
 $ cd <env_name>
+
+# Edit terraform.tfvars and set:
+# desired_count = 0  # Prevents ECS from trying to start tasks before ECR has image
+
 $ make all
 
-# Update existing environment
+# Step 2: Build and push Keycloak container image
+$ cd build
+$ export AWS_REGION=<your_region>
+$ make all ENV=<env_name>
+
+# Step 3: Start ECS tasks
+$ cd environments/<env_name>
+
+# Edit terraform.tfvars and set:
+# desired_count = 2  # Now start the desired number of ECS tasks
+
+$ make update
+
+# Step 4: (Optional) Configure MCP OAuth realm for Claude Code/Cursor/VS Code
+$ cd environments/<env_name>/mcp-oauth
+
+# Option A: Semi-automated setup (Recommended)
+$ ./init-from-parent.sh --gateway-url "https://your-gateway-url/mcp"
+$ make deploy
+
+# Option B: Manual configuration
+$ cp terraform.tfvars.example terraform.tfvars
+$ vi terraform.tfvars  # Set keycloak_url, keycloak_admin_password, resource_server_uri
+$ make deploy
+
+# Once complete, Claude Code will auto-discover and register with your Keycloak realm
+# See environments/template/mcp-oauth/README.md for detailed configuration guide
+```
+
+### Update Existing Environment
+
+```console
 $ cd environments/<env_name>
 $ vi terraform.tfvars # edit as needed...
 $ make update
+```
 
-# Destroy environment
+### Destroy Environment
+
+```console
 $ cd environments/<env_name>
 $ make destroy
 # type 'yes' to confirm
-
-# Build Keycloak container and deploy
-$ cd build
-$ make all ENV=<env_name>
 ```
 
 **NOTE:** Once deployed, Keycloak will be accessible via `<yourdomain>/auth`.
