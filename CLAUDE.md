@@ -246,7 +246,7 @@ This prevents:
 
 ## MCP OAuth Configuration
 
-This project includes Terraform configuration for deploying MCP (Model Context Protocol) OAuth 2.0 authentication with Keycloak.
+This project includes Terraform configuration for deploying OAuth 2.0 authentication for MCP (Model Context Protocol) servers with Keycloak.
 
 ### Location
 
@@ -264,7 +264,7 @@ environments/
 cd environments/<env-name>/mcp-oauth
 
 # Auto-generate configuration from parent Keycloak deployment
-./init-from-parent.sh --gateway-url "https://your-gateway-url/mcp"
+./init-from-parent.sh --mcp-server-url "https://your-mcp-server-url/mcp"
 
 # Deploy
 make deploy
@@ -277,7 +277,7 @@ cd environments/<env-name>/mcp-oauth
 
 # Configure manually
 cp terraform.tfvars.example terraform.tfvars
-vim terraform.tfvars  # Set keycloak_url, keycloak_admin_password, resource_server_uri
+vim terraform.tfvars  # Set keycloak_url, keycloak_admin_password, resource_server_uri (MCP server URL)
 
 # Deploy
 make deploy
@@ -289,9 +289,9 @@ See [environments/template/mcp-oauth/README.md](environments/template/mcp-oauth/
 
 - **Dynamic Client Registration (RFC 7591)**: MCP clients can self-register
 - **PKCE (RFC 7636)**: All clients use PKCE with S256
-- **Resource Indicators (RFC 8707)**: Audience-based authorization
+- **Resource Indicators (RFC 8707)**: Audience-based authorization for MCP server authentication
 - **Realm Default Scopes**: DCR clients automatically get `mcp:run` scope
-- **Audience Mapper**: Automatic JWT `aud` claim injection
+- **Audience Mapper**: Automatic JWT `aud` claim injection for MCP server URL validation
 
 ### Configuration Files
 
@@ -319,19 +319,19 @@ Or use: `make deploy` (runs all phases automatically)
 ### MCP Client Integration
 
 ```bash
-# Add MCP server
-claude mcp add --transport http <name> <gateway-url>
+# Add MCP server (provide your MCP server URL)
+claude mcp add --transport http <name> <mcp-server-url>
 
 # Authenticate
 > /mcp
 ```
 
 MCP clients will:
-1. Discover Authorization Server via metadata
+1. Discover Authorization Server via OIDC metadata
 2. Register via DCR (automatically gets `mcp:run` scope)
-3. Use PKCE for authorization
-4. Receive JWT with correct `aud` claim
-5. Connect to MCP gateway successfully
+3. Use PKCE for secure authorization flow
+4. Receive JWT with correct `aud` claim (matching MCP server URL)
+5. Successfully authenticate to MCP server with JWT token
 
 ### Important Notes
 
@@ -344,6 +344,7 @@ MCP clients will:
 - `mcp:run` MUST be in Realm default scopes (configured in `mcp-realm-scopes.tf`)
 - Audience mapper MUST be attached to `mcp:run` scope (configured in `mcp-scopes.tf`)
 - DCR policies MUST allow `mcp:run` scope (configured via `fix-allowed-scopes.sh`)
+- `resource_server_uri` MUST match your MCP server URL for JWT `aud` validation
 
 ### Documentation
 
@@ -356,10 +357,11 @@ See `environments/template/mcp-oauth/README.md` and `docs/` directory for:
 
 ### Troubleshooting
 
-**MCP client auth succeeds but connection fails:**
+**MCP client auth succeeds but MCP server connection fails:**
 1. Check client has `mcp:run` scope (Admin Console)
-2. Verify token `aud` claim matches gateway URL
-3. Recreate client connection (will get updated default scopes)
+2. Verify token `aud` claim matches MCP server URL exactly
+3. Verify MCP server is configured to validate JWT with correct issuer and audience
+4. Recreate client connection (will get updated default scopes)
 
 **DCR fails:**
 1. Run `./fix-allowed-scopes.sh` (add `mcp:run` to allowed scopes)

@@ -4,7 +4,7 @@
 # This script reads outputs from the parent Keycloak Terraform state
 # and populates the mcp-oauth configuration automatically
 #
-# Usage: ./init-from-parent.sh [--gateway-url <url>]
+# Usage: ./init-from-parent.sh [--mcp-server-url <url>]
 #
 
 set -euo pipefail
@@ -105,29 +105,29 @@ fi
 
 echo -e "${GREEN}  ✓ Admin password retrieved from SSM${NC}"
 
-# Parse command line arguments for optional gateway URL
-GATEWAY_URL=""
+# Parse command line arguments for optional MCP server URL
+MCP_SERVER_URL=""
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --gateway-url)
-      GATEWAY_URL="$2"
+    --mcp-server-url)
+      MCP_SERVER_URL="$2"
       shift 2
       ;;
     *)
       echo -e "${RED}Unknown option: $1${NC}"
-      echo "Usage: $0 [--gateway-url <url>]"
+      echo "Usage: $0 [--mcp-server-url <url>]"
       exit 1
       ;;
   esac
 done
 
-# If gateway URL not provided, use placeholder
-if [ -z "$GATEWAY_URL" ]; then
-  GATEWAY_URL="https://your-mcp-gateway.example.com/mcp"
-  echo -e "${YELLOW}  ⚠ Gateway URL not provided, using placeholder${NC}"
-  echo -e "    Rerun with: $0 --gateway-url <your-gateway-url>${NC}"
+# If MCP server URL not provided, use placeholder
+if [ -z "$MCP_SERVER_URL" ]; then
+  MCP_SERVER_URL="https://your-mcp-server.example.com/mcp"
+  echo -e "${YELLOW}  ⚠ MCP server URL not provided, using placeholder${NC}"
+  echo -e "    Rerun with: $0 --mcp-server-url <your-mcp-server-url>${NC}"
 else
-  echo -e "${GREEN}  ✓ Gateway URL: ${GATEWAY_URL}${NC}"
+  echo -e "${GREEN}  ✓ MCP Server URL: ${MCP_SERVER_URL}${NC}"
 fi
 
 # Create terraform.tfvars in mcp-oauth directory
@@ -167,9 +167,9 @@ realm_display_name = "MCP OAuth Realm"
 # Resource Server Configuration
 # ============================================================================
 
-# Your MCP Resource Server URI (Gateway URL)
-# TODO: Update this with your actual Bedrock Agent Gateway URL
-resource_server_uri = "${GATEWAY_URL}"
+# Your MCP Resource Server URI (MCP Server URL)
+# TODO: Update this with your actual MCP server URL
+resource_server_uri = "${MCP_SERVER_URL}"
 
 # ============================================================================
 # Client Configuration
@@ -247,14 +247,14 @@ echo "=========================================="
 echo "Keycloak URL:        ${KEYCLOAK_URL}"
 echo "Admin Username:      keycloak_admin"
 echo "Admin Password:      ********** (retrieved from SSM)"
-echo "Gateway URL:         ${GATEWAY_URL}"
+echo "MCP Server URL:      ${MCP_SERVER_URL}"
 echo ""
 
-if [ "$GATEWAY_URL" = "https://your-mcp-gateway.example.com/mcp" ]; then
+if [ "$MCP_SERVER_URL" = "https://your-mcp-server.example.com/mcp" ]; then
   echo -e "${YELLOW}⚠ IMPORTANT: Update resource_server_uri in terraform.tfvars${NC}"
-  echo "  1. Get your Bedrock Agent Gateway URL"
+  echo "  1. Get your MCP server URL"
   echo "  2. Edit mcp-oauth/terraform.tfvars"
-  echo "  3. Set: resource_server_uri = \"https://your-gateway-url/mcp\""
+  echo "  3. Set: resource_server_uri = \"https://your-mcp-server-url/mcp\""
   echo ""
 fi
 
@@ -264,8 +264,8 @@ echo "=========================================="
 echo ""
 echo "Next steps:"
 echo "  1. Review: mcp-oauth/terraform.tfvars"
-if [ "$GATEWAY_URL" = "https://your-mcp-gateway.example.com/mcp" ]; then
-  echo "  2. Update: resource_server_uri with your actual Gateway URL"
+if [ "$MCP_SERVER_URL" = "https://your-mcp-server.example.com/mcp" ]; then
+  echo "  2. Update: resource_server_uri with your actual MCP server URL"
   echo "  3. Deploy: cd mcp-oauth && make deploy"
 else
   echo "  2. Deploy: cd mcp-oauth && make deploy"

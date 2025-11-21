@@ -27,10 +27,10 @@ See [CLAUDE.md](CLAUDE.md) for detailed upgrade notes and breaking changes.
 
 ### 🔐 MCP OAuth 2.1 Integration (November 2024)
 
-Complete OAuth 2.1/OIDC infrastructure for Model Context Protocol (MCP) clients:
+Complete OAuth 2.1/OIDC infrastructure for Model Context Protocol (MCP) servers:
 
 - **Dynamic Client Registration (DCR)**: RFC 7591 compliant, enabling Claude Code, Cursor, and VS Code integration
-- **Audience-Based Authorization**: RFC 8807 resource indicators with automatic JWT `aud` claim injection
+- **Audience-Based Authorization**: RFC 8807 resource indicators with automatic JWT `aud` claim injection for MCP server authentication
 - **PKCE Enforcement**: S256 code challenge for secure public client flows
 - **Automated Deployment**: One-command deployment (`make deploy`) with integrated DCR policy configuration
 - **Comprehensive Documentation**: Complete setup guide in [environments/template/mcp-oauth/](environments/template/mcp-oauth/)
@@ -38,19 +38,19 @@ Complete OAuth 2.1/OIDC infrastructure for Model Context Protocol (MCP) clients:
 **Key Features**:
 - Realm default scopes auto-configuration (DCR clients inherit `mcp:run` scope)
 - Anonymous DCR support (no trusted hosts restrictions for cursor://, vscode:// URIs)
-- Audience protocol mapper for seamless gateway integration
+- Audience protocol mapper for seamless MCP server integration
 - Complete test suite for validation
 
 **Quick Start**:
 ```bash
 # Recommended: Semi-automated setup
 cd environments/<env-name>/mcp-oauth
-./init-from-parent.sh --gateway-url "https://your-gateway-url/mcp"
+./init-from-parent.sh --mcp-server-url "https://your-mcp-server-url/mcp"
 make deploy
 
 # Alternative: Manual configuration
 cp terraform.tfvars.example terraform.tfvars
-vim terraform.tfvars  # Set keycloak_url, admin password, gateway URL
+vim terraform.tfvars  # Set keycloak_url, admin password, MCP server URL
 make deploy
 ```
 
@@ -67,17 +67,17 @@ Recent enhancements ensure robust production deployments:
 - **Monitoring Enabled**: `KC_HEALTH_ENABLED=true` and `KC_METRICS_ENABLED=true` by default
 - **Container Optimization**: Fixed build-time vs runtime configuration consistency
 - **Path Normalization**: Updated handling for HTTP requests with `..` or `//` sequences
-- **Automated MCP Client Configuration**: Deploy script automatically configures Keycloak for Claude Code/Cursor/VS Code
+- **Automated MCP OAuth Configuration**: Deploy script automatically configures Keycloak realm for MCP server authentication
 
 ## Introduction
 
 **NOTE:** I spin releases for the latest Keycloak versions avoiding "dot ohs"
 e.g. 15.1.1+ but not 15.1.0.
 
-Opinionated infrastructure and deployment automation for Keycloak on AWS Fargate with MCP OAuth 2.1 authentication support.
+Opinionated infrastructure and deployment automation for Keycloak on AWS Fargate with MCP OAuth 2.1 integration for MCP server authentication.
 
 - Batteries included (network plumbing + container build/deploy) 🚀
-- MCP OAuth 2.1 compatible (DCR, PKCE, audience-based authorization) 🔐
+- MCP OAuth 2.1 ready (DCR, PKCE, audience-based authorization for MCP servers) 🔐
 - Tested with latest Terraform 😍
 - Prefer fully-managed backing services (Fargate, Aurora, CloudWatch) 🥱
 - JDBC clustering and cache replication (improved HA) 🤙
@@ -141,15 +141,15 @@ $ make update
 $ cd environments/<env_name>/mcp-oauth
 
 # Option A: Semi-automated setup (Recommended)
-$ ./init-from-parent.sh --gateway-url "https://your-gateway-url/mcp"
+$ ./init-from-parent.sh --mcp-server-url "https://your-mcp-server-url/mcp"
 $ make deploy
 
 # Option B: Manual configuration
 $ cp terraform.tfvars.example terraform.tfvars
-$ vi terraform.tfvars  # Set keycloak_url, keycloak_admin_password, resource_server_uri
+$ vi terraform.tfvars  # Set keycloak_url, keycloak_admin_password, resource_server_uri (MCP server URL)
 $ make deploy
 
-# Once complete, Claude Code will auto-discover and register with your Keycloak realm
+# Once complete, MCP clients will discover and authenticate with your Keycloak realm
 # See environments/template/mcp-oauth/README.md for detailed configuration guide
 ```
 
@@ -287,9 +287,9 @@ Q: `The target group with targetGroupArn <arn> does not have an associated load 
 
 A: This is rare, but if it happens to you just re-run `make all` (double apply), perhaps waiting a few minutes in between.
 
-Q: How do I integrate Claude Code or other MCP clients with Keycloak?
+Q: How do I configure OAuth authentication for my MCP server with Keycloak?
 
-A: See the complete setup guide in [environments/template/mcp-oauth/](environments/template/mcp-oauth/). The infrastructure supports Dynamic Client Registration (DCR) out of the box - simply copy the template to your environment, configure variables, and run `make deploy`. Claude Code will automatically discover and register with your Keycloak realm.
+A: See the complete setup guide in [environments/template/mcp-oauth/](environments/template/mcp-oauth/). The infrastructure supports Dynamic Client Registration (DCR) for MCP clients out of the box - simply copy the template to your environment, configure your MCP server URL, and run `make deploy`. MCP clients like Claude Code will automatically discover and register with your Keycloak realm.
 
 Q: Why is my ALB health check failing after upgrading to Keycloak 26.4.4?
 
