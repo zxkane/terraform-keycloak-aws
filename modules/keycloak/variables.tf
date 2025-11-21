@@ -3,6 +3,12 @@ variable "alb_certificate_arn" {
   type        = string
 }
 
+variable "alb_access_logs_enabled" {
+  description = "Enable ALB access logs (set to false for regions without ELB service account support)"
+  type        = bool
+  default     = true
+}
+
 variable "alb_destroy_log_bucket" {
   description = "Destroy ALB log bucket on teardown"
   type        = bool
@@ -65,8 +71,26 @@ variable "db_engine_version" {
 }
 
 variable "db_instance_type" {
-  description = "Instance type used for RDS instances"
+  description = "Instance type used for RDS instances (use 'db.serverless' for Aurora Serverless v2)"
   type        = string
+}
+
+variable "db_use_serverless_v2" {
+  description = "Whether to use Aurora Serverless v2 (true) or provisioned instances (false)"
+  type        = bool
+  default     = true
+}
+
+variable "db_serverless_min_capacity" {
+  description = "Minimum capacity for Aurora Serverless v2 (in ACUs, 0.5-128)"
+  type        = number
+  default     = 0.5
+}
+
+variable "db_serverless_max_capacity" {
+  description = "Maximum capacity for Aurora Serverless v2 (in ACUs, 0.5-128)"
+  type        = number
+  default     = 2
 }
 
 variable "db_maintenance_window" {

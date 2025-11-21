@@ -51,6 +51,8 @@ cd db
 ### Core Components
 - **Keycloak Application**: Containerized Keycloak running on ECS Fargate with Infinispan clustering via JDBC_PING
 - **Database**: Aurora PostgreSQL cluster (minimum version 13 for Keycloak 26.4.4)
+  - **Default**: Aurora Serverless v2 with auto-scaling (0.5-2 ACUs)
+  - **Alternative**: Provisioned instances (e.g., db.r6g.large)
 - **Load Balancing**: Application Load Balancer (ALB) with TLS termination
 - **Networking**: Custom VPC with public/private subnets across 2+ AZs
 - **Security**: Parameter Store for secrets, encryption everywhere by default
@@ -60,6 +62,8 @@ cd db
 - `/build/keycloak/cache-ispn-jdbc-ping.xml` - Infinispan clustering configuration
 - `/modules/keycloak/templates/container_definition.json` - ECS task definition template
 - `/environments/template/terraform.tfvars` - Environment configuration template
+- `/modules/keycloak/variables.tf` - Module input variables including database configuration
+- `/modules/keycloak/main.tf` - Main infrastructure resources including RDS cluster
 
 ### Environment Variables (Keycloak Configuration)
 Critical environment variables in container_definition.json:
@@ -88,6 +92,67 @@ Critical environment variables in container_definition.json:
 - Management port: 9990
 - Clustering port: 7800 (JDBC_PING)
 - **ALB Health Check**: Configured to use `/auth/realms/master` (reliable alternative)
+
+## Database Configuration Options
+
+This project supports both Aurora Serverless v2 and traditional provisioned instances. **Aurora Serverless v2 is the default** for cost optimization and automatic scaling.
+
+### Aurora Serverless v2 (Default - Recommended)
+
+**Benefits:**
+- **Cost-Effective**: Pay only for capacity consumed (per-second billing)
+- **Auto-Scaling**: Automatically adjusts compute capacity based on workload
+- **Optimal for Variable Workloads**: Perfect for dev/test or production with unpredictable traffic patterns
+- **Instant Scaling**: Sub-second scaling response time
+
+**Configuration in terraform.tfvars:**
+```hcl
+db_use_serverless_v2       = true
+db_instance_type           = "db.serverless"
+db_serverless_min_capacity = 0.5  # Minimum ACUs (0.5 ACU = ~1 GB RAM)
+db_serverless_max_capacity = 2    # Maximum ACUs (2 ACU = ~4 GB RAM)
+db_cluster_size            = 2    # Number of instances in cluster
+```
+
+**ACU Guidelines:**
+- 1 ACU ≈ 2 GB RAM
+- Minimum: 0.5 ACU (1 GB RAM) - Good for dev/test
+- Small Production: 1-4 ACUs (2-8 GB RAM)
+- Medium Production: 4-16 ACUs (8-32 GB RAM)
+- Large Production: 16-128 ACUs (32-256 GB RAM)
+
+### Provisioned Instances (Alternative)
+
+**When to Use:**
+- Predictable, steady-state workloads
+- Need for specific instance features or configurations
+- Budget requires fixed monthly costs
+
+**Configuration in terraform.tfvars:**
+```hcl
+db_use_serverless_v2       = false
+db_instance_type           = "db.r6g.large"  # Or any valid instance type
+db_cluster_size            = 2
+```
+
+**Common Instance Types:**
+- `db.t4g.medium` - 2 vCPUs, 4 GB RAM (burstable, cost-effective for dev/test)
+- `db.r6g.large` - 2 vCPUs, 16 GB RAM (memory-optimized, production)
+- `db.r6g.xlarge` - 4 vCPUs, 32 GB RAM (larger production)
+- `db.r6g.2xlarge` - 8 vCPUs, 64 GB RAM (high-performance production)
+
+See [AWS RDS Instance Types](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.html) for complete list.
+
+### Switching Between Configurations
+
+To switch from Serverless v2 to Provisioned (or vice versa):
+
+1. **Update terraform.tfvars** with desired configuration
+2. **Run terraform plan** to review changes
+3. **Backup database**: `cd db && ./dump.sh`
+4. **Apply changes**: `terraform apply`
+
+**Note:** Switching between modes requires cluster recreation, so plan for downtime and ensure you have a recent backup.
 
 ## Development Guidelines
 

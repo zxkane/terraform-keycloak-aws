@@ -16,10 +16,10 @@ resource "keycloak_realm" "mcp" {
   # email_theme                 = "keycloak"
 
   # Token settings
-  access_token_lifespan                     = "5m"   # 5 minutes for access tokens
-  access_token_lifespan_for_implicit_flow   = "15m"  # 15 minutes for implicit flow (not used in MCP)
-  sso_session_idle_timeout                  = "30m"  # 30 minutes idle timeout
-  sso_session_max_lifespan                  = "10h"  # 10 hours max session
+  access_token_lifespan                     = "24h"  # 1 day for access tokens
+  access_token_lifespan_for_implicit_flow   = "24h"  # 1 day for implicit flow (not used in MCP)
+  sso_session_idle_timeout                  = "24h"  # 1 day idle timeout
+  sso_session_max_lifespan                  = "24h"  # 1 day max session
   offline_session_idle_timeout              = "720h" # 30 days for offline sessions (720 hours)
   offline_session_max_lifespan              = "1440h" # 60 days max for offline sessions (1440 hours)
 

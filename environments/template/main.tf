@@ -10,7 +10,7 @@ resource "random_string" "namespace" {
 }
 
 module "terraform_state_backend" {
-  source                             = "git::https://github.com/cloudposse/terraform-aws-tfstate-backend.git?ref=tags/1.7.1"
+  source                             = "git::https://github.com/cloudposse/terraform-aws-tfstate-backend.git?ref=v1.7.1"
   environment                        = var.environment
   name                               = var.name
   namespace                          = random_string.namespace.result
@@ -45,6 +45,7 @@ locals {
 module "keycloak" {
   source                             = "../../modules/keycloak"
   alb_certificate_arn                = var.alb_certificate_arn
+  alb_access_logs_enabled            = var.alb_access_logs_enabled
   alb_destroy_log_bucket             = var.alb_destroy_log_bucket
   container_cpu_units                = var.container_cpu_units
   container_memory_limit             = var.container_memory_limit
@@ -56,6 +57,9 @@ module "keycloak" {
   db_cluster_size                    = var.db_cluster_size
   db_engine_version                  = var.db_engine_version
   db_instance_type                   = var.db_instance_type
+  db_use_serverless_v2               = var.db_use_serverless_v2
+  db_serverless_min_capacity         = var.db_serverless_min_capacity
+  db_serverless_max_capacity         = var.db_serverless_max_capacity
   db_maintenance_window              = var.db_maintenance_window
   deletion_protection                = var.deletion_protection
   deployment_maximum_percent         = var.deployment_maximum_percent

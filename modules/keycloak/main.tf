@@ -45,6 +45,7 @@ resource "aws_ssm_parameter" "keycloak_password" {
 
 module "alb" {
   source                                  = "git::https://github.com/cloudposse/terraform-aws-alb.git?ref=tags/1.11.1"
+  access_logs_enabled                     = var.alb_access_logs_enabled
   alb_access_logs_s3_bucket_force_destroy = var.alb_destroy_log_bucket
   attributes                              = ["alb"]
   certificate_arn                         = var.alb_certificate_arn
@@ -290,4 +291,11 @@ module "rds_cluster" {
   subnets               = var.private_subnet_ids
   tags                  = module.label.tags
   vpc_id                = var.vpc_id
+
+  # Aurora Serverless v2 scaling configuration
+  # Only applied when db_use_serverless_v2 is true
+  serverlessv2_scaling_configuration = var.db_use_serverless_v2 ? {
+    min_capacity = var.db_serverless_min_capacity
+    max_capacity = var.db_serverless_max_capacity
+  } : null
 }

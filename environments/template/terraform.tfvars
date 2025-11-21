@@ -59,10 +59,30 @@ deployment_minimum_healthy_percent = 50
 desired_count                      = 2 # ECS tasks
 log_retention_days                 = 5
 
-# https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.html
-db_instance_type         = "db.r6g.large"
+######################################################################
+# Database Configuration
+######################################################################
+
+# Aurora Serverless v2 (Default - Recommended for cost optimization)
+# - Automatically scales compute capacity based on actual usage
+# - Pay only for capacity consumed (per-second billing)
+# - Optimal for variable workloads
+# - ACU range: 0.5-128 (1 ACU = ~2 GB RAM)
+#
+# For Serverless v2:
+db_use_serverless_v2       = true
+db_instance_type           = "db.serverless"
+db_serverless_min_capacity = 0.5  # Minimum ACUs (0.5 ACU = ~1 GB RAM)
+db_serverless_max_capacity = 2    # Maximum ACUs (2 ACU = ~4 GB RAM)
+
+# Alternative: Provisioned Instances (for predictable workloads)
+# Uncomment below and set db_use_serverless_v2 = false
+# db_use_serverless_v2 = false
+# db_instance_type     = "db.r6g.large"  # Fixed instance type
+
+# Common database settings
 db_backup_retention_days = 5
-db_cluster_size          = 2
+db_cluster_size          = 2  # Number of instances in the cluster
 
 # Aurora PostgreSQL Configuration
 # Keycloak 26.4.4 official requirement: PostgreSQL 13.x minimum
